@@ -7,7 +7,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const info = {
-  TITLE: 'Wedding'
+  TITLE: 'Olympics'
 }
 
 const config = {
@@ -23,11 +23,11 @@ const config = {
       'Cache-Control': 'no-store',
     },
     proxy: {
-       '/api': {
-            target: 'http://localhost:8080',
-            router: () => 'http://localhost:8088',
-            logLevel: 'debug'
-       }
+      '/api': {
+        target: 'http://localhost:8080',
+        router: () => 'http://localhost:8088',
+        logLevel: 'debug'
+      }
     }
   },
 
@@ -88,4 +88,4 @@ const config = {
   ],
 }
 
-module.exports = [ config ];
+module.exports = [config];

@@ -1,33 +1,17 @@
-import React, { Component, ChangeEvent, MouseEvent } from "react";
-import { isRecord } from './record';
+import React from "react";
+import { Component } from "react";
+import { HomePageView } from "./HomePageView";
+import { AddPageView } from "./AddPageView";
+import { GetTicketPageView } from "./GetPageView";
+import { Event } from "./event";
+import { addEvent, getTickets, listEvents } from "./server";
 
-
-// TODO: When you're ready to get started, you can remove all the example
-//   code below and start with this blank application:
-
-// type WeddingAppState = {
-// }
-//
-// /** Displays the UI of the Wedding rsvp application. */
-// export class WeddingApp extends Component<{}, WeddingAppState> {
-//
-//   constructor(props: {}) {
-//     super(props);
-//
-//     this.state = {};
-//   }
-//
-//   render = (): JSX.Element => {
-//     return <div></div>;
-//   };
-// }
-
+type Page = "Homepage" | "AddEvent" | "GetTicket";
 
 type OlympicAppState = {
-  name: string;  // mirror state of name text box
-  msg: string;   // message sent from server
+  page: Page;
+  listEvents: Event[];
 }
-
 
 /** Displays the UI of the Wedding rsvp application. */
 export class OlympicApp extends Component<{}, OlympicAppState> {
@@ -35,70 +19,90 @@ export class OlympicApp extends Component<{}, OlympicAppState> {
   constructor(props: {}) {
     super(props);
 
-    this.state = {name: "", msg: ""};
+    this.state = { page: "Homepage", listEvents: [] };
   }
+
+  componentDidMount = (): void => {
+    listEvents(this.doListEventsJson);
+  };
 
   render = (): JSX.Element => {
-    return (<div>
-        <div>
-          <label htmlFor="name">Name:</label>
-          <input type="name" id="name" value={this.state.name}
-                 onChange={this.doNameChange}></input>
-          <button onClick={this.doDummyClick}>Dummy</button>
-        </div>
-        {this.renderMessage()}
-      </div>);
-  };
 
-  renderMessage = (): JSX.Element => {
-    if (this.state.msg === "") {
-      return <div></div>;
-    } else {
-      return <p>Server says: {this.state.msg}</p>;
+
+    switch (this.state.page) {
+      case "Homepage":
+        return <HomePageView onAddEventClicked={this.doHomePageAddEventClick} onGetTicketClicked={this.doHomePageGetTicketsClick} onRefreshClicked={this.doBackClick} listEvents={this.state.listEvents} />;
+      case "AddEvent":
+        return <AddPageView onBackClicked={this.doBackClick} onCreateClicked={this.doCreateEventClick} />;
+      case "GetTicket":
+        if (this.state.listEvents.length === 0) {
+          alert('No Sport Available Yet! Cannot get tickets!');
+          this.setState({ page: "Homepage" });
+        } else if (this.doAvlbCheckBeforeClick()) {
+          alert('All events\' tickets are sold out! Cannot get tickets!');
+          this.setState({ page: "Homepage" });
+        }
+        return <GetTicketPageView onBackClicked={this.doBackClick} onGetTicketsClicked={this.doGetTicketsClick} allEvents={this.state.listEvents} />;
     }
   };
 
-  doNameChange = (evt: ChangeEvent<HTMLInputElement>): void => {
-    this.setState({name: evt.target.value, msg: ""});
-  };
-
-  doDummyClick = (_evt: MouseEvent<HTMLButtonElement>): void => {
-    const name = this.state.name.trim();
-    if (name.length > 0) {
-      const url = "/api/dummy?name=" + encodeURIComponent(name);
-      fetch(url).then(this.doDummyResp)
-          .catch(() => this.doDummyError("failed to connect to server"));
+  /**
+   * Checks if there is any ticket left
+   *    if there is availability, return false
+   *    otherwise return true
+   * @returns a boolean indicating if there is availability left
+   */
+  doAvlbCheckBeforeClick = (): boolean => {
+    for (const e of this.state.listEvents) {
+      if (e.soldTicket !== e.maxAvabTicket) return false;
     }
-  };
-
-  doDummyResp = (res: Response): void => {
-    if (res.status === 200) {
-      res.json().then(this.doDummyJson)
-          .catch(() => this.doDummyError("200 response is not JSON"));
-    } else if (res.status === 400) {
-      res.text().then(this.doDummyError)
-          .catch(() => this.doDummyError("400 response is not name"));
-    } else {
-      this.doDummyError(`bad status code ${res.status}`);
-    }
-  };
-
-  doDummyJson = (data: unknown): void => {
-    if (!isRecord(data)) {
-      console.error("200 response is not a record", data);
-      return;
-    }
-
-    if (typeof data.msg !== "string") {
-      console.error("'msg' field of 200 response is not a string", data.msg);
-      return;
-    }
-
-    this.setState({msg: data.msg});
+    return true;
   }
 
-  doDummyError = (msg: string): void => {
-    console.error(`Error fetching /api/dummy: ${msg}`);
-  };
+  /**
+   * Invoked when either
+   *    1) "Back" button on "AddEvent" or "GetTicket" page was clicked
+   *    2) Refresh button on the homepage was clicked
+   */
+  doBackClick = (): void => {
+    listEvents(this.doListEventsJson);
+    this.setState({ page: "Homepage" });
+  }
 
+  /**
+   * Invoked when "Add Event" was clicked on "Homepage"
+   */
+  doHomePageAddEventClick = (): void => {
+    this.setState({ page: "AddEvent" });
+  }
+
+  /**
+   * Invoked when "Get Tickets" was clicked on "Homepage"
+   */
+  doHomePageGetTicketsClick = (): void => {
+    this.setState({ page: "GetTicket" });
+  }
+
+  /**
+   * Invoked when "Get Tickets" was clicked on "GetTicket" page
+   */
+  doGetTicketsClick = (sport: string, event: string, name: string, numOfTickets: number): void => {
+    getTickets(sport, event, name, numOfTickets, this.doBackClick);
+  }
+
+  /**
+   * Invoked when "Create" was clicked on "AddEvent" page
+   * @param e is the event needs to be created
+   */
+  doCreateEventClick = (e: Event): void => {
+    addEvent(e, this.doBackClick);
+  }
+
+  /**
+   * Updates all list files as the callback
+   * @param names names to be stored in the state
+   */
+  doListEventsJson = (events: Event[]): void => {
+    this.setState({ listEvents: events });
+  };
 }

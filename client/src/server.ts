@@ -110,6 +110,7 @@ const doListResp = (res: Response, cb: ListCallback): void => {
  * @param msg is the message to display in details
  */
 const doListError = (msg: string): void => {
+    alert(msg);
     console.error(`Error fetching /api/getEvt: ${msg}`);
 };
 
@@ -150,6 +151,7 @@ const doAddResp = (res: Response, cb: AddCallback): void => {
  * @param msg is the message to display in details
  */
 const doAddError = (msg: string): void => {
+    alert(msg);
     console.error(`Error fetching /api/add: ${msg}`);
 };
 
@@ -190,5 +192,6 @@ const doGetTktResp = (res: Response, cb: AddCallback): void => {
  * @param msg is the message to display in details
  */
 const doGetTktError = (msg: string): void => {
+    alert(msg);
     console.error(`Error fetching /api/getTkt: ${msg}`);
 };

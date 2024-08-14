@@ -151,7 +151,7 @@ export class AddPageView extends Component<AddPageProps, AddPageState> {
             try {
                 BigInt(this.state.maxAvabTicket);
             } catch {
-                alert('Please enter a valid maxAvabTicket!');
+                alert('Please enter a valid max available ticket!');
                 return;
             }
         }
